@@ -16,6 +16,21 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+PROJECT_ID = os.environ['GCLOUD_PROJECT']
+REGION_ID = "et"
+PROJECT_URL = "%s.%s.r.appspot.com" % (PROJECT_ID, REGION_ID)
+CLOUD_STORAGE_BUCKET = "%s.appspot.com" % PROJECT_ID
+MODEL_URL = "%s/assets/model.json" % PROJECT_URL
+TOKEN_URL = "%s/assets/token.json" % PROJECT_URL
+H5_URL = "%s/assets/model.h5" % PROJECT_URL
+
+@app.route('/assets/<file_name>')
+def get_assets(file_name):
+    gcs = storage.Client()
+    bucket = gcs.get_bucket(CLOUD_STORAGE_BUCKET)
+    blob = bucket.blob(file_name)
+    return blob.download_as_string()
+
 @app.route("/predict",method=['POST'])
 def predict():
  if flask.request.method == "POST":
@@ -26,10 +41,10 @@ def predict():
   oov_tok = "<OOV>"
   stopword = [ "a", "about", "am", "an", "and", "any", "are", "as", "at", "be", "because", "been", "before", "between", "both", "but", "by", "could", "did", "do", "does", "doing", "down", "during", "each", "few", "for", "from", "further", "had", "has", "have", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "into", "is", "it", "it's", "its", "itself", "let's", "me", "more", "most", "nor", "of", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "own", "same", "she", "she'd", "she'll", "she's", "should", "so", "some", "such", "than", "that", "that's", "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "through", "to", "too", "under", "until", "up",  "was", "we", "we'd", "we'll", "we're", "we've", "were", "what", "what's", "when", "when's", "where", "where's", "which", "while", "who", "who's", "whom", "why", "why's", "with" ] 
 
-  with open('model.json','r') as json_model:
+  with open(MODEL_URL,'r') as json_model:
      load_model = json_model.read()
 
-  with open('token.json','r') as json_model:
+  with open(TOKEN_URL,'r') as json_model:
      load_tokenizer = json_model.read()
 
   text1,text2,text3=param_NIK = request.args.get("text1"),
@@ -37,7 +52,7 @@ def predict():
                                 request.args.get("text3")
 
   model=model_from_json(load_model)
-  model.load_weights('model.h5')
+  model.load_weights(H5_URL)
 
   sentences = text1 +' '+ text2 +' '+ text3
 
